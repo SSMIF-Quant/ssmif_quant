@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.css">
+  <script src="https://kit.fontawesome.com/259882b2fb.js"></script>
+
+</head>
+
+<style>
+
+body{
+  background-color: #edf6ff;
+  overflow-x: hidden;
+}
+
+.table tbody tr > td.pass {
+  background-color: #dff0d8 !important;
+}
+
+.table tbody tr > td.fail {
+  background-color: #f2dede !important;
+}
+
+.table tbody tr > td.warning {
+  background-color: #fcf8e3 !important;
+}
+
+.input-group{
+  margin-bottom:10px;
+}
+
+
+</style>
+
+
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href=".." id="navMarquee">Bailey</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item active">
+            <a class="nav-link" href="/holdings">Holdings <span class="sr-only">(current)</span></a>
+          </li>
+          <!-- <li class="nav-item">
+            <a class="nav-link" href="#">Features</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Pricing</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+          </li> -->
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- <div class="container" style="margin-top: 3%;"> -->
+  <div class="container" style="margin-top: 3%;">
+
+    <div class="row">
+
+      {% if session.get('perms')[1] == 1 %}
+        <div class="card text-center col-md-3">
+          <div class="card-body">
+            <h5 class="card-title">New Transaction</h5>
+            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#transactionModal">Add</button>
+          </div>
+        </div>
+
+        <div class="modal fade" id="transactionModal" tabindex="-1" role="dialog" aria-labelledby="transactionModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">New Transaction</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <form id='newTransForm'>
+
+                  <div class="form-group">
+                    <label for="transDate" class="col-form-label">Date:</label>
+                    <input type="date" class="form-control" id="transDate" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="transType" class="col-form-label">Type:</label>
+                    <input type="text" class="form-control" id="transType" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="symbol" class="col-form-label">Symbol:</label>
+                    <input type="text" class="form-control" id="symbol" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="prodDesc" class="col-form-label">Product Description:</label>
+                    <input type="text" class="form-control" id="prodDesc" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="units" class="col-form-label">Units:</label>
+                    <input type="number" class="form-control" id="units" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="grossAmt" class="col-form-label">Gross Amount:</label>
+                    <input type="number" class="form-control" id="grossAmt" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="transFee" class="col-form-label">Transaction Fee:</label>
+                    <input type="number" class="form-control" id="transFee" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="netAmt" class="col-form-label">Net Amount:</label>
+                    <input type="number" class="form-control" id="netAmt" required>
+                  </div>
+
+                </form>
+              </div>
+              <div class="modal-footer">
+                <p id="responsemsg" class="text-success"></p>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="newTransaction();">Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {% endif %}
+
+
+    </div>
+
+
+  </div>
+
+
+  <div class="row justify-content-center">
+
+    <div id="table" style="width:80%;">
+
+
+
+    </div>
+
+  </div>
+
+
+
+
+  <script src="https://code.jquery.com/jquery-3.4.1.js" integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.js"></script>
+
+
+  <script>
+
+
+    $(function () {
+      $('[data-toggle="tooltip"]').tooltip()
+      getHoldings();
+    })
+
+
+    function getHoldings() {
+
+
+
+      $.ajax({
+        type: "GET",
+        url: "/api/holdings/getHoldings",
+        //success: function(result){console.log(result)}
+        success: function(result){
+          //create a table based on result
+          var table = document.createElement('table');
+          table.id = "outputTable";
+          table.className = "table table-bordered table-hover";
+          table.setAttribute("style", "background-color: white; ");
+
+          var tableHeader = document.createElement('thead');
+          var header = "<tr><th scope='col'>Ticker</th><th scope='col'>Company</th><th scope='col'>Sector</th><th scope='col'>Original Purchase Date</th><th scope='col'>Shares</th><th scope='col'>Entry VWAP</th><th scope='col'>Invested Amount</th><th scope='col'>Stop Loss</th><th scope='col'>Current Value (Mark-to-Market)</th><th scope='col'>Year Open Price</th><th scope='col'>Year Open Position Value</th><th scope='col'>Month Open Price</th><th scope='col'>Month Open Position Value</th></tr>"
+          tableHeader.innerHTML = header;
+
+          var tableBody = document.createElement('tbody');
+
+          for(var i = 0; i < result.length; i++) {
+            var obj = result[i];
+
+            var date = new Date(obj['Original_Purchase_Date']*1000);
+            var formattedtime = date.getMonth() + "/" + date.getDay() + "/" + date.getFullYear()
+
+            var row = document.createElement('tr');
+            var innerrow = "<td>" + obj['Ticker'] + "</td><td>" + obj['Company'] + "</td><td>" + obj['Sector'] + "</td><td>" + formattedtime + "</td><td>" + obj['Shares'] + "</td><td>" + obj['Entry_VWAP'] + "</td><td>" + obj['Invested_Amount'] + "</td><td>" + obj['Stop_Loss'] + "</td><td>" + obj['Current_Value_MTM'] + "</td><td>" + obj['Year_Open_Price'] + "</td><td>" + obj['Year_Open_Position_Value'] + "</td><td>" + obj['Month_Open_Price'] + "</td><td>" + obj['Month_Open_Position_Value'] + "</td>";
+            row.innerHTML = innerrow;
+            tableBody.appendChild(row);
+          }
+
+
+
+          table.appendChild(tableHeader);
+          table.appendChild(tableBody);
+          document.getElementById('table').appendChild(table);
+          $('#outputTable').DataTable();
+
+        }
+
+      });
+
+
+    }
+
+
+    {% if session.get('perms')[1] == 1 %}
+      function newTransaction(){
+        $("#responsemsg").text('')
+        if (checkTransForm()) {
+          $.ajax({
+            type: "POST",
+            url: "/api/transactions/newTransaction",
+            data: {'transDate': $('#transDate').val(), 'transType': $('#transType').val(), 'symbol': $('#symbol').val().toUpperCase(), 'prodDesc': $('#prodDesc').val(), 'units': $('#units').val(), 'grossAmt': $('#grossAmt').val(), 'transFee': $('#transFee').val(), 'netAmt': $('#netAmt').val()},
+            //success: function(result){console.log(result)}
+            success: function(result){
+
+              var inputs = $('#newTransForm :input');
+              inputs.each(function() {
+                $(this).removeClass('is-valid');
+                $(this).removeClass('is-invalid');
+              });
+              $("#responsemsg").text('Successfully Addd Transaction!')
+            }
+          });
+        }
+
+
+      }
+
+      function checkTransForm(){
+        var inputs = $('#newTransForm :input');
+
+        let invalid = 0;
+
+        inputs.each(function() {
+          if ($(this).val() == ""){
+            $(this).removeClass('is-valid');
+            $(this).addClass('is-invalid');
+            invalid++;
+          }else{
+            $(this).removeClass('is-invalid');
+            $(this).addClass('is-valid');
+          }
+
+        });
+
+        return !(invalid > 0);
+      }
+    {% endif %}
+
+
+  </script>
+
+</body>
+</html>

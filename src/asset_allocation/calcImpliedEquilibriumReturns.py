@@ -95,10 +95,13 @@ if __name__ == "__main__":
     market_caps = [1.63, 227.72, 33.64, 904.62, 131.4]
     var_cov_matrix = getCovarianceMatrixOfReturns(equities, start=start, end=end, basis="Adj Close")
     print("##############VARIANCE COVARIANCE MATRIX ###################\n")
+    print("Pretty version \n");
     print(var_cov_matrix)
     print()
+    print("dataframe.values\n")
     print(var_cov_matrix.values)
     print()
+    print("Upper left value of the matrix - notice the higher accuracy than is represented in the table\n")
     print(var_cov_matrix.values[0][0])
     print("\n###################################################\n")
 

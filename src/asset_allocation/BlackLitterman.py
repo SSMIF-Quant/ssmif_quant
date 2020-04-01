@@ -30,28 +30,51 @@ class BlackLitterman:
         """
         if basis == "daily":
             frequency = 1
-        elif basis == "weekly":
-            frequency = 5
+        # elif basis == "weekly":
+        #     frequency = 5
         elif basis == "monthly":
-            frequency = 21
+            frequency = 20
         elif basis == "quarterly":
-            frequency = 63
+            frequency = 62
         elif basis == "semi-annually":
-            frequency = 127
+            frequency = 125
         elif basis == "annually":
-            frequency = 254
+            frequency = 252
         else:
             raise ValueError
             return 
 
         dates = self.getDates()
         historical_returns = []
-
+        # used_lead_indexes = []
+        # used_tail_indexes = []
+        lead_offset = np.arange(0,253)
+        tail_offset = np.append(np.arange(0,1), np.arange(0,253))
+        # print(lead_offset)
+        # print(tail_offset)
+        # print(dates)
         for index, ticker in enumerate(self.ticker_names):
             ticker_data = pdr.get_data_yahoo(ticker, start=str(dates[1]), end=str(dates[0]))
             ticker_data = ticker_data[self.BASIS]
-            for i in range(frequency, len(ticker_data), frequency):
-                historical_returns[index].append((ticker_data[i] / ticker_data[i-frequency]) - 1)
+            print(ticker_data[252])
+            # print(frequency, len(ticker_data), ticker_data[25])
+            n = int(len(ticker_data) / frequency)
+            temp = []
+            # print(n)
+            if (basis != "daily"):
+                for i in range(n):
+                    temp.append((ticker_data[(frequency * (i+1)) + lead_offset[i]] / ticker_data[(frequency * i) + tail_offset[i]]) - 1 )
+                    historical_returns.append(temp)
+                    # used_lead_indexes.append((frequency * (i+1)) + lead_offset[i])
+                    # used_tail_indexes.append((frequency * i) + tail_offset[i])
+            else:
+                for i in range(n-1):
+                    temp.append((ticker_data[i+1] / ticker_data[i]) - 1 )
+                    historical_returns.append(temp)
+                    # used_lead_indexes.append(i+1)
+                    # used_tail_indexes.append(i)
+
+        # return (used_lead_indexes, used_tail_indexes)
         return historical_returns
 
     def getDates(self):
@@ -104,13 +127,14 @@ class BlackLitterman:
         TODO: Set this up for calculating returns on all transactions
         TODO:TEST
         """ 
-
+        
         returns = self.getHistoricalReturns(basis=basis)
-        n = len(returns[self.ticker_names[0]])
+        # n = len(returns[self.ticker_names])
+        print(returns)
         # lol = np.asarray([[0, .15, -.1, .05], [0, .15, -.1, .05], [0, .15, -.1, .05]]).transpose()
         # returns = pd.DataFrame(lol, columns=self.ticker_names)
         # print(returns)
-        n = len(returns[self.ticker_names[0]])
+        # n = len(returns[self.ticker_names[0]])
         comp_avg_ret = []
         for ticker in self.ticker_names:
             temp = []
@@ -149,7 +173,11 @@ if __name__ == "__main__":
 
     #yet another sanity check
     bl = BlackLitterman(["AAPL", "MSFT", "^GSPC"],4,4,4)
-    print(bl.getExpectedReturns(basis="annually"))
+    dates = bl.getDates()
+    ticker_data = pdr.get_data_yahoo("^GSPC", start=str(dates[1]), end=str(dates[0]))
+    print("hello ",(ticker_data["Adj Close"][252]/ticker_data["Adj Close"][0]) - 1)
+    # print(bl.getExpectedReturns(basis="annually"))
+    print(bl.getHistoricalReturns(basis="annually"))
     # #Another sanity check
     # bl = BlackLitterman(4, 4, 4, 4)
     # print(bl.getVarianceCovarianceMatrix(pd.DataFrame(np.array([[90,90,60,60,30], [60,90,60,60,30], [90,30,60,90,30]]).T.tolist())))

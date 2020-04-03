@@ -9,7 +9,7 @@ class BlackLitterman:
     This model will take in three lists, ticker names, investor views, and investor confidence
     Convention - all percentages will be expressed as decimals internally
     """
-    def __init__(self, ticker_names, investor_views, investor_confidence, risk_free_rate, basis="Adj Close", benchmark="^GSPC", time_horizon=2):
+    def __init__(self, ticker_names, investor_views, investor_confidence, risk_free_rate, basis="Adj Close", benchmark=["^GSPC"], time_horizon=2):
         self.ticker_names = ticker_names
         self.investor_views = investor_views
         self.investor_confidence = investor_confidence
@@ -20,16 +20,20 @@ class BlackLitterman:
 
     #Up first, we will need to calculate the implied equilibrium returns
     #We will need to pull in the ticker data, compute a TIMEHORIZON week moving average of the reurns    +
+    #We will need to calculate the excess returns of a stock + 
     #We will need to get the market capitalization weights  of a portfolio comprised of the given tickers
     #We will need to calculte the risk aversion coefficient of the portfolio based off of the benchmark 
     #We will need to calculate the variance covariance matrix of the excesss returns +
+    def getTickerData(self, ticker, start, end):
+        return pdr.get_data_yahoo(ticker, start=start, end=end)[self.BASIS]
 
-    def getHistoricalReturns(self, basis="quarterly"):
-        """
-        TODO:Test
-        """
+    def getHistoricalReturns(self, basis="annually", tickers=None):
+
+        if tickers == None:
+            tickers = self.ticker_names
         if basis == "daily":
             frequency = 1
+        #weekly doesn't work with numbers because it's weird
         # elif basis == "weekly":
         #     frequency = 5
         elif basis == "monthly":
@@ -46,31 +50,27 @@ class BlackLitterman:
 
         dates = self.getDates()
         historical_returns = []
-        # used_lead_indexes = []
-        # used_tail_indexes = []
         lead_offset = np.arange(0,253)
         tail_offset = np.append(np.arange(0,1), np.arange(0,253))
-        # print(lead_offset)
-        # print(tail_offset)
-        # print(dates)
-        for index, ticker in enumerate(self.ticker_names):
-            ticker_data = pdr.get_data_yahoo(ticker, start=str(dates[1]), end=str(dates[0]))
-            ticker_data = ticker_data[self.BASIS]
-            print(ticker_data[252])
-            # print(frequency, len(ticker_data), ticker_data[25])
+        # print(self.ticker_names)
+        for index, ticker in enumerate(tickers):
+            ticker_data = self.getTickerData(ticker, start=str(dates[1]), end=str(dates[0]))
+            # ticker_data = pdr.get_data_yahoo(ticker, start=str(dates[1]), end=str(dates[0]))
+            # ticker_data = ticker_data[self.BASIS]
+            # return ticker_data
             n = int(len(ticker_data) / frequency)
+            
             temp = []
-            # print(n)
             if (basis != "daily"):
                 for i in range(n):
                     temp.append((ticker_data[(frequency * (i+1)) + lead_offset[i]] / ticker_data[(frequency * i) + tail_offset[i]]) - 1 )
-                    historical_returns.append(temp)
+                historical_returns.append(temp)
                     # used_lead_indexes.append((frequency * (i+1)) + lead_offset[i])
                     # used_tail_indexes.append((frequency * i) + tail_offset[i])
             else:
                 for i in range(n-1):
                     temp.append((ticker_data[i+1] / ticker_data[i]) - 1 )
-                    historical_returns.append(temp)
+                historical_returns.append(temp)
                     # used_lead_indexes.append(i+1)
                     # used_tail_indexes.append(i)
 
@@ -86,17 +86,19 @@ class BlackLitterman:
 
         return (today, last_year)
 
-    def getDailyReturns(self):
+    def getDailyReturns(self, tickers=None):
         """
         This will return a moving average of the daily returns of the tickers in the input list
         """
+        if tickers == None:
+            tickers = self.ticker_names
         #Initialize the dataframe of moving averaged returns with column names as ticker names and get the dates (today and YTD last year)
-        returns = pd.DataFrame(columns=self.ticker_names)
+        returns = pd.DataFrame(columns=tickers)
         dates = self.getDates()
 
         #For all tickers, get the ticker data for the past year, get the dialy returns, get the moving average of those daily returns, and 
         #append them to the return dataframe
-        for ticker in self.ticker_names:
+        for ticker in tickers:
 
             ticker_data = pdr.get_data_yahoo(ticker, start=str(dates[1]), end=str(dates[0]))
             ticker_data = ticker_data[self.BASIS]
@@ -111,40 +113,50 @@ class BlackLitterman:
             returns[ticker] = daily_returns
         return returns
 
-    def getMovingAverageDailyReturns(self):
+    def getMovingAverageDailyReturns(self, tickers=None):
         """
         This will return the daily returns of the tickers in the input list
         """
+        if tickers == None:
+            tickers = self.ticker_names
         returns = self.getDailyReturns()
         
-        for ticker in self.ticker_names:
+        for ticker in tickers:
             returns[ticker] = returns[ticker].rolling(self.TIMEHORIZON*5, min_periods=1).mean()
         return returns
 
-    def getExpectedReturns(self, basis="quarterly"):
+    def getExpectedReturns(self, basis="annually", tickers=None):
         """
         This will default to calculating quarterly returns for assets 
         TODO: Set this up for calculating returns on all transactions
         TODO:TEST
         """ 
-        
-        returns = self.getHistoricalReturns(basis=basis)
-        # n = len(returns[self.ticker_names])
-        print(returns)
-        # lol = np.asarray([[0, .15, -.1, .05], [0, .15, -.1, .05], [0, .15, -.1, .05]]).transpose()
-        # returns = pd.DataFrame(lol, columns=self.ticker_names)
+        if tickers == None:
+            tickers = self.ticker_names
+        returns = self.getHistoricalReturns(basis=basis, tickers=tickers)
+        # returns = [[.15, -.1, .05], [.15, -.1, .05], [.15, -.1, .05]]
         # print(returns)
-        # n = len(returns[self.ticker_names[0]])
-        comp_avg_ret = []
-        for ticker in self.ticker_names:
-            temp = []
-            daily_returns = returns[ticker]
-            for i in range(0, n):
-                temp.append(daily_returns[i] + 1)
-            comp_avg_ret.append(np.prod(temp)**(1.0/(n-1)) - 1)
-
+        #just to make sure that everytning is ok
+        if (len(tickers) == len(returns)):
+            comp_avg_ret = []
+            for index, ticker in enumerate(tickers):
+                temp = []
+                ticker_return = returns[index]
+                for i in range(len(ticker_return)):
+                    temp.append(ticker_return[i] + 1)
+                comp_avg_ret.append(np.prod(temp)**(1.0/len(temp)) - 1)  
         return comp_avg_ret
         
+    def getExcessReturns(self, rf=None, basis="annually", tickers=None):
+        if (rf == None):
+            rf = self.risk_free_rate
+        if tickers == None:
+            tickers = self.ticker_names
+        returns = self.getExpectedReturns(basis=basis, tickers=tickers)
+        output = []
+        for value in returns:
+            output.append(value - rf)
+        return output
 
     def getVarianceCovarianceMatrix(self, returns):
         #Based off of https://stattrek.com/matrix-algebra/covariance-matrix.aspx
@@ -167,17 +179,35 @@ class BlackLitterman:
         #V should be a k x k (num assets x num assets) variance covariance matrix
         return V
         
-    #def getRiskAversionCoefficient(self):
-        # expected_return = 
+    def getRiskAversionCoefficient(self, rf=None):
+        """
+        TODO: Fix
+        """
+        if (rf == None):
+            rf = self.risk_free_rate
+        excess_return = self.getExcessReturns(rf=rf, tickers=self.BENCHMARK)
+        variance = excess_return
+        # dates = self.getDates()
+        # variance = (self.getTickerData(self.BENCHMARK, start=str(dates[1]), end=str(dates[0])).pct_change())
+
+        # risk_aversion_coefficient = excess_return / variance
+        return variance
+
 if __name__ == "__main__":
 
+    bl = BlackLitterman(["AAPL", "MSFT"], 4, 4, 4)
+    # bl = BlackLitterman(["AAPL", "MSFT", "^GSPC"],4,4,4)
+    print(bl.getHistoricalReturns(tickers=["^GSPC"]))
+    print(bl.getExpectedReturns(tickers=["^GSPC"]))
+    print(bl.getExcessReturns(rf=.02,tickers=["^GSPC"]))
+    print(bl.getRiskAversionCoefficient(rf=.02))
     #yet another sanity check
-    bl = BlackLitterman(["AAPL", "MSFT", "^GSPC"],4,4,4)
-    dates = bl.getDates()
-    ticker_data = pdr.get_data_yahoo("^GSPC", start=str(dates[1]), end=str(dates[0]))
-    print("hello ",(ticker_data["Adj Close"][252]/ticker_data["Adj Close"][0]) - 1)
-    # print(bl.getExpectedReturns(basis="annually"))
-    print(bl.getHistoricalReturns(basis="annually"))
+    # bl = BlackLitterman(["AAPL", "MSFT", "^GSPC"],4,4,4)
+    # dates = bl.getDates()
+    # ticker_data = pdr.get_data_yahoo("^GSPC", start=str(dates[1]), end=str(dates[0]))
+    # print("hello ",(ticker_data["Adj Close"][252]/ticker_data["Adj Close"][0]) - 1)
+    # # print(bl.getExpectedReturns(basis="annually"))
+    # print(bl.getHistoricalReturns(basis="annually"))
     # #Another sanity check
     # bl = BlackLitterman(4, 4, 4, 4)
     # print(bl.getVarianceCovarianceMatrix(pd.DataFrame(np.array([[90,90,60,60,30], [60,90,60,60,30], [90,30,60,90,30]]).T.tolist())))

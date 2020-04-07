@@ -19,12 +19,13 @@ class BlackLitterman:
         self.BENCHMARK = benchmark
         self.TIMEHORIZON = time_horizon
 
-    #Up first, we will need to calculate the implied equilibrium returns
+    #Up first, we will need to calculate the implied equilibrium returns  +
     #We will need to pull in the ticker data, compute a TIMEHORIZON week moving average of the reurns    +
     #We will need to calculate the excess returns of a stock + 
-    #We will need to get the market capitalization weights  of a portfolio comprised of the given tickers
-    #We will need to calculte the risk aversion coefficient of the portfolio based off of the benchmark 
+    #We will need to get the market capitalization weights  of a portfolio comprised of the given tickers  +
+    #We will need to calculte the risk aversion coefficient of the portfolio based off of the benchmark +
     #We will need to calculate the variance covariance matrix of the excesss returns +
+    #We will need a function to take in the view vector
     def getTickerData(self, ticker, start, end):
         return pdr.get_data_yahoo(ticker, start=start, end=end)[self.BASIS]
 
@@ -208,18 +209,107 @@ class BlackLitterman:
         PI = risk_aversion_coefficient * np.matmul(variance_covariance_matrix, market_cap_weights)
         return PI
 
+    def getInvestorViews(self):
+        return self.investor_views
+
+    def getViewIdentifierMatrix(self):
+        #This function will take in a list of lists of lists because that's the first way to do it I came up with
+        # investor_views = self.investor_views
+        # tickers = self.ticker_names
+
+        tickers = ["X", "Y", "Z", "A", "B", "C", "D", "E"]
+        investor_views = [ 
+                            [["X"],["X"], 5.25],
+                            [["Y"],["Z"], 0.25],
+                            [["A", "B"],["C", "D"], 2.00]
+                        ]
+        #output will have a row for every view and a column for every asset in tickers
+        
+        output = np.zeros((len(investor_views), len(tickers)))
+
+        for index, view in enumerate(investor_views):
+            defenders = view[0]
+            defender_index = []
+            challengers = view[1]
+            challenger_index = []
+            prediction = view[2]
+            sign = 1 if prediction > 0 else -1
+
+            if defenders == challengers:
+                for ticker in defenders:
+                    defender_index.append(tickers.index(ticker))
+                for number in defender_index:
+                    output[index][number] = 1 * sign
+
+
+            else:
+                for ticker in defenders:
+                    defender_index.append(tickers.index(ticker))
+                for ticker in challengers:
+                    challenger_index.append(tickers.index(ticker))
+
+            for number in defender_index:
+                n = len(defender_index)
+                output[index][number] = 1/n * sign
+            
+            for number in challenger_index:
+                n = len(challenger_index)
+                output[index][number] = 1/n * (-sign)
+            
+        return output
+            
+            
+
+        
 if __name__ == "__main__":
 
+    #Note on how to generate investor views: lets say we have eight assets, X, Y, Z, A, B, C, D, E
+    #They are input into the tickers vector as [X, Y, Z, A, B, C, D, E]
+    # we believe that X will increase 5.25% in value - confidence 25%
+    # we believe that Y will outperform Z by 25 basis points - confidence 50%
+    # we believe that A and B will outperform C and D by 2% - confidence = 65%
+    # No view on asset E
+    # Those views would be input into the views vector as a column vector of the form:
+    # [ 
+    #   [[X],[X], 5.25],
+    #   [[Y],[Z], 0.25],
+    #   [[A, B],[C, D], 2.00]
+    # ]
+
     bl = BlackLitterman(["AAPL", "MSFT"], 4, 4, .02, [.477091, .522909])
+    # print("Investor Views Vector: ", bl.getInvestorViews())
+    print("View Identifier Matrix:\n", bl.getViewIdentifierMatrix())
+
+    # print("Historical Returns: ", bl.getHistoricalReturns())
+    # print("Expected Returns: ", bl.getExpectedReturns())
+    # print("Excess Returns: ", bl.getExcessReturns())
+    # print("Risk Aversion: ", bl.getRiskAversionCoefficient(rf=.02))
+    # print("Implied Equilibrium Returns: ", bl.getImpliedEquilibriumReturns())
+
+
     # bl = BlackLitterman(["AAPL", "MSFT", "^GSPC"],4,4,4)
     # print("Historical Returns", bl.getHistoricalReturns(tickers=["^GSPC"]))
     # print("Expected Returns", bl.getExpectedReturns(tickers=["^GSPC"]))
     # print("Excess Returns", bl.getExcessReturns(rf=.02,tickers=["^GSPC"]))
-    print("Historical Returns: ", bl.getHistoricalReturns())
-    print("Expected Returns: ", bl.getExpectedReturns())
-    print("Excess Returns: ", bl.getExcessReturns())
-    print("Risk Aversion: ", bl.getRiskAversionCoefficient(rf=.02))
-    print("Implied Equilibrium Returns: ", bl.getImpliedEquilibriumReturns())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     # print(np.dot(100,bl.getVarianceCovarianceMatrix(bl.getDailyReturns()).values))
     # market_cap_weights = [.477091, .522909]
     # # print(np.matmul(bl.getVarianceCovarianceMatrix(bl.getDailyReturns()).values, market_cap_weights))

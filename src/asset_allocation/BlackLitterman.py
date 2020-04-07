@@ -152,6 +152,7 @@ class BlackLitterman:
             rf = self.risk_free_rate
         if tickers == None:
             tickers = self.ticker_names
+
         returns = self.getExpectedReturns(basis=basis, tickers=tickers)
         output = []
         for value in returns:
@@ -185,22 +186,22 @@ class BlackLitterman:
         """
         if (rf == None):
             rf = self.risk_free_rate
-        excess_return = self.getExcessReturns(rf=rf, tickers=self.BENCHMARK)
-        variance = excess_return
-        # dates = self.getDates()
-        # variance = (self.getTickerData(self.BENCHMARK, start=str(dates[1]), end=str(dates[0])).pct_change())
+        dates = self.getDates()
 
-        # risk_aversion_coefficient = excess_return / variance
-        return variance
+        benchmark_daily_returns = self.getTickerData(self.BENCHMARK, start=str(dates[1]), end=str(dates[0])).pct_change()
+        benchmark_daily_returns_volatility = benchmark_daily_returns.std()[0]
+        benchmark_excess_returns = self.getExcessReturns(tickers=self.BENCHMARK)
+        risk_aversion_coefficient = benchmark_excess_returns / benchmark_daily_returns_volatility
+        return risk_aversion_coefficient
 
 if __name__ == "__main__":
 
-    bl = BlackLitterman(["AAPL", "MSFT"], 4, 4, 4)
+    bl = BlackLitterman(["AAPL", "MSFT"], 4, 4, .02)
     # bl = BlackLitterman(["AAPL", "MSFT", "^GSPC"],4,4,4)
-    print(bl.getHistoricalReturns(tickers=["^GSPC"]))
-    print(bl.getExpectedReturns(tickers=["^GSPC"]))
-    print(bl.getExcessReturns(rf=.02,tickers=["^GSPC"]))
-    print(bl.getRiskAversionCoefficient(rf=.02))
+    print("Historical Returns", bl.getHistoricalReturns(tickers=["^GSPC"]))
+    print("Expected Returns", bl.getExpectedReturns(tickers=["^GSPC"]))
+    print("Excess Returns", bl.getExcessReturns(rf=.02,tickers=["^GSPC"]))
+    print("Risk Aversion: ", bl.getRiskAversionCoefficient(rf=.02))
     #yet another sanity check
     # bl = BlackLitterman(["AAPL", "MSFT", "^GSPC"],4,4,4)
     # dates = bl.getDates()

@@ -83,8 +83,10 @@ class BlackLitterman:
         """
         today = datetime.date(datetime.now())
         last_year = datetime.date(datetime(datetime.now().year-1, datetime.now().month, datetime.now().day))
+        year_before_that = datetime.date(datetime(datetime.now().year-2, datetime.now().month, datetime.now().day-3))
 
-        return (today, last_year)
+        # return (today, last_year)
+        return (last_year, year_before_that)
 
     def getDailyReturns(self, tickers=None):
         """
@@ -189,7 +191,7 @@ class BlackLitterman:
         dates = self.getDates()
 
         benchmark_daily_returns = self.getTickerData(self.BENCHMARK, start=str(dates[1]), end=str(dates[0])).pct_change()
-        benchmark_daily_returns_volatility = benchmark_daily_returns.std()[0]
+        benchmark_daily_returns_volatility = benchmark_daily_returns.var()[0]
         benchmark_excess_returns = self.getExcessReturns(tickers=self.BENCHMARK)
         risk_aversion_coefficient = benchmark_excess_returns / benchmark_daily_returns_volatility
         return risk_aversion_coefficient
@@ -198,10 +200,22 @@ if __name__ == "__main__":
 
     bl = BlackLitterman(["AAPL", "MSFT"], 4, 4, .02)
     # bl = BlackLitterman(["AAPL", "MSFT", "^GSPC"],4,4,4)
-    print("Historical Returns", bl.getHistoricalReturns(tickers=["^GSPC"]))
-    print("Expected Returns", bl.getExpectedReturns(tickers=["^GSPC"]))
-    print("Excess Returns", bl.getExcessReturns(rf=.02,tickers=["^GSPC"]))
+    # print("Historical Returns", bl.getHistoricalReturns(tickers=["^GSPC"]))
+    # print("Expected Returns", bl.getExpectedReturns(tickers=["^GSPC"]))
+    # print("Excess Returns", bl.getExcessReturns(rf=.02,tickers=["^GSPC"]))
+    print("Historical Returns", bl.getHistoricalReturns())
+    print("Expected Returns", bl.getExpectedReturns())
+    print("Excess Returns", bl.getExcessReturns())
     print("Risk Aversion: ", bl.getRiskAversionCoefficient(rf=.02))
+    # print(np.dot(100,bl.getVarianceCovarianceMatrix(bl.getDailyReturns()).values))
+    market_cap_weights = [.477091, .522909]
+    # print(np.matmul(bl.getVarianceCovarianceMatrix(bl.getDailyReturns()).values, market_cap_weights))
+
+    PI = bl.getRiskAversionCoefficient() * np.matmul(bl.getVarianceCovarianceMatrix(bl.getDailyReturns()).values, market_cap_weights)
+    print(PI)
+    # print(bl.getDailyReturns(tickers=["MSFT"]).var())
+
+    # print("PI = :", PI)
     #yet another sanity check
     # bl = BlackLitterman(["AAPL", "MSFT", "^GSPC"],4,4,4)
     # dates = bl.getDates()

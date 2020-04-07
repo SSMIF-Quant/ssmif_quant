@@ -9,11 +9,12 @@ class BlackLitterman:
     This model will take in three lists, ticker names, investor views, and investor confidence
     Convention - all percentages will be expressed as decimals internally
     """
-    def __init__(self, ticker_names, investor_views, investor_confidence, risk_free_rate, basis="Adj Close", benchmark=["^GSPC"], time_horizon=2):
+    def __init__(self, ticker_names, investor_views, investor_confidence, risk_free_rate, market_cap_weights, basis="Adj Close", benchmark=["^GSPC"], time_horizon=2):
         self.ticker_names = ticker_names
         self.investor_views = investor_views
         self.investor_confidence = investor_confidence
         self.risk_free_rate = risk_free_rate
+        self.market_cap_weights = market_cap_weights
         self.BASIS = basis
         self.BENCHMARK = benchmark
         self.TIMEHORIZON = time_horizon
@@ -196,23 +197,35 @@ class BlackLitterman:
         risk_aversion_coefficient = benchmark_excess_returns / benchmark_daily_returns_volatility
         return risk_aversion_coefficient
 
+    def getImpliedEquilibriumReturns(self, market_cap_weights=None):
+
+        if (market_cap_weights == None):
+            market_cap_weights = self.market_cap_weights
+        
+        #PI = risk_aversion_coefficient * variance covariance matrix of returns * market capitalization weights
+        risk_aversion_coefficient = self.getRiskAversionCoefficient()
+        variance_covariance_matrix = self.getVarianceCovarianceMatrix(self.getDailyReturns()).values
+        PI = risk_aversion_coefficient * np.matmul(variance_covariance_matrix, market_cap_weights)
+        return PI
+
 if __name__ == "__main__":
 
-    bl = BlackLitterman(["AAPL", "MSFT"], 4, 4, .02)
+    bl = BlackLitterman(["AAPL", "MSFT"], 4, 4, .02, [.477091, .522909])
     # bl = BlackLitterman(["AAPL", "MSFT", "^GSPC"],4,4,4)
     # print("Historical Returns", bl.getHistoricalReturns(tickers=["^GSPC"]))
     # print("Expected Returns", bl.getExpectedReturns(tickers=["^GSPC"]))
     # print("Excess Returns", bl.getExcessReturns(rf=.02,tickers=["^GSPC"]))
-    print("Historical Returns", bl.getHistoricalReturns())
-    print("Expected Returns", bl.getExpectedReturns())
-    print("Excess Returns", bl.getExcessReturns())
+    print("Historical Returns: ", bl.getHistoricalReturns())
+    print("Expected Returns: ", bl.getExpectedReturns())
+    print("Excess Returns: ", bl.getExcessReturns())
     print("Risk Aversion: ", bl.getRiskAversionCoefficient(rf=.02))
+    print("Implied Equilibrium Returns: ", bl.getImpliedEquilibriumReturns())
     # print(np.dot(100,bl.getVarianceCovarianceMatrix(bl.getDailyReturns()).values))
-    market_cap_weights = [.477091, .522909]
-    # print(np.matmul(bl.getVarianceCovarianceMatrix(bl.getDailyReturns()).values, market_cap_weights))
+    # market_cap_weights = [.477091, .522909]
+    # # print(np.matmul(bl.getVarianceCovarianceMatrix(bl.getDailyReturns()).values, market_cap_weights))
 
-    PI = bl.getRiskAversionCoefficient() * np.matmul(bl.getVarianceCovarianceMatrix(bl.getDailyReturns()).values, market_cap_weights)
-    print(PI)
+    # PI = bl.getRiskAversionCoefficient() * np.matmul(bl.getVarianceCovarianceMatrix(bl.getDailyReturns()).values, market_cap_weights)
+    # print(PI)
     # print(bl.getDailyReturns(tickers=["MSFT"]).var())
 
     # print("PI = :", PI)

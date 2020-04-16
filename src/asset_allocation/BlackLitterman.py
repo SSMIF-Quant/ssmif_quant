@@ -216,7 +216,8 @@ class BlackLitterman:
         #This function will take in a list of lists of lists because that's the first way to do it I came up with
         # investor_views = self.investor_views
         # tickers = self.ticker_names
-
+        # market_cap_weights = self.market_cap_weights
+        market_cap_weights = [1, 9, 1, 9, 1, 9, 1, 9]
         tickers = ["X", "Y", "Z", "A", "B", "C", "D", "E"]
         investor_views = [ 
                             [["X"],["X"], 5.25],
@@ -225,6 +226,7 @@ class BlackLitterman:
                         ]
         #output will have a row for every view and a column for every asset in tickers
         
+        #it will also be weighted by the relative matket capitalizations of the assets
         output = np.zeros((len(investor_views), len(tickers)))
 
         for index, view in enumerate(investor_views):
@@ -234,27 +236,45 @@ class BlackLitterman:
             challenger_index = []
             prediction = view[2]
             sign = 1 if prediction > 0 else -1
+            relative_market_cap_weights_defenders = []
+            relative_market_cap_weights_challengers = []
+            market_cap_weights_defenders = []
+            market_cap_weights_challengers = []
 
             if defenders == challengers:
                 for ticker in defenders:
                     defender_index.append(tickers.index(ticker))
-                for number in defender_index:
-                    output[index][number] = 1 * sign
+                    market_cap_weights_defenders.append(market_cap_weights[tickers.index(ticker)])
+                
+                for i, v in enumerate(market_cap_weights_defenders):
+                    relative_market_cap_weights_defenders.append(market_cap_weights_defenders[i]/sum(market_cap_weights_defenders))
 
+                for i, number in enumerate(defender_index):
+                    output[index][number] = relative_market_cap_weights_defenders[i] * sign
 
             else:
                 for ticker in defenders:
                     defender_index.append(tickers.index(ticker))
+                    market_cap_weights_defenders.append(market_cap_weights[tickers.index(ticker)])
+
+                for i, v in enumerate(market_cap_weights_defenders):
+                    relative_market_cap_weights_defenders.append(market_cap_weights_defenders[i]/sum(market_cap_weights_defenders))
+
                 for ticker in challengers:
                     challenger_index.append(tickers.index(ticker))
+                    market_cap_weights_challengers.append(market_cap_weights[tickers.index(ticker)])
+                
+                for i, v in enumerate(market_cap_weights_challengers):
+                    relative_market_cap_weights_challengers.append(market_cap_weights_challengers[i]/sum(market_cap_weights_challengers))
 
-            for number in defender_index:
-                n = len(defender_index)
-                output[index][number] = 1/n * sign
             
-            for number in challenger_index:
-                n = len(challenger_index)
-                output[index][number] = 1/n * (-sign)
+            for i, number in enumerate(defender_index):
+                # n = len(defender_index)
+                output[index][number] = relative_market_cap_weights_defenders[i] * sign
+            
+            for i, number in enumerate(challenger_index):
+                # n = len(challenger_index)
+                output[index][number] = relative_market_cap_weights_challengers[i] * (-sign)
             
         return output
             
